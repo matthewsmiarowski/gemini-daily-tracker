@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>Daily Tracker</title>
+    <style>
+        /* --- Google Calendar Inspired Styles --- */
+        body {
+            font-family: 'Roboto', sans-serif;
+            padding: 10px;
+            background-color: #fff;
+            color: #3c4043;
+            max-width: 650px;
+            margin: 20px auto;
+        }
+        h1 {
+            font-size: 1.5em;
+            font-weight: 400;
+            color: #3c4043;
+            text-align: left;
+            padding-left: 10px;
+        }
+        h2 {
+            font-size: 1.25em;
+            font-weight: 500;
+            text-align: center;
+        }
+        #editing-date-display {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            color: #3c4043;
+            font-weight: 400;
+        }
+        .question-group {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 24px;
+            margin-right: 10px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            background-color: #fff;
+            color: #1a73e8;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        button:hover {
+            background-color: #f8f9fa;
+        }
+        button.selected {
+            background-color: #e8f0fe;
+            border-color: #1a73e8;
+        }
+        #back-to-calendar-btn {
+            width: auto;
+            display: block;
+            margin: 20px auto 0;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+        }
+        #back-to-calendar-btn:hover {
+            background-color: #185abc;
+        }
+
+        #calendar-container {
+            margin-top: 10px;
+            background-color: #fff;
+            padding: 0;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+        .calendar-header button {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #5f6368;
+            padding: 5px;
+        }
+        .calendar-header button:hover {
+            background-color: #f1f3f4;
+            border-radius: 50%;
+        }
+        #month-year {
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+        }
+        .weekday-header {
+            text-align: center;
+            padding: 10px 0;
+            font-size: 0.75em;
+            color: #70757a;
+            font-weight: 500;
+        }
+        .calendar-day {
+            position: relative;
+            text-align: center;
+            height: 70px;
+            border-top: 1px solid #e0e0e0;
+            border-left: 1px solid #e0e0e0;
+            cursor: pointer;
+        }
+        .calendar-grid:first-of-type .calendar-day {
+            border-top: none;
+        }
+        .calendar-day:nth-child(7n+1) {
+            border-left: none;
+        }
+        .day-number {
+            font-size: 0.8em;
+            margin-top: 5px;
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            border-radius: 50%;
+        }
+        .calendar-day:not(.future-day):hover .day-number {
+            background-color: #f1f3f4;
+        }
+        .calendar-day.today .day-number {
+            background-color: #1a73e8;
+            color: white;
+        }
+        .calendar-day.selected-day .day-number {
+            background-color: #d2e3fc;
+            color: #1967d2;
+        }
+        .indicators {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+        }
+        .indicator {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+        }
+        .indicator.green { background-color: #34a853; }
+        .indicator.red { background-color: #ea4335; }
+        .empty-day {
+            border-left: 1px solid #e0e0e0;
+        }
+        .empty-day:first-child {
+            border-left: none;
+        }
+        .future-day {
+            color: #ccc;
+            cursor: not-allowed;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <!-- Page 1: Calendar View -->
+    <div id="calendar-page">
+        <h1>Daily Tracker</h1>
+        <div id="calendar-container">
+            <div class="calendar-header">
+                <button id="prev-month-btn">&lt;</button>
+                <h2 id="month-year"></h2>
+                <button id="next-month-btn">&gt;</button>
+            </div>
+            <div class="calendar-grid" id="weekday-headers"></div>
+            <div class="calendar-grid" id="calendar-body"></div>
+        </div>
+    </div>
+
+    <!-- Page 2: Questions View -->
+    <div id="questions-page" style="display: none;">
+        <h2 id="editing-date-display"></h2>
+        <div id="exercise-group" class="question-group">
+            <p>Did I exercise today?</p>
+            <button data-question="exercise" data-answer="yes">Yes</button>
+            <button data-question="exercise" data-answer="no">No</button>
+        </div>
+        <div id="ateTooMuch-group" class="question-group">
+            <p>Did I eat too much today?</p>
+            <button data-question="ateTooMuch" data-answer="yes">Yes</button>
+            <button data-question="ateTooMuch" data--answer="no">No</button>
+        </div>
+        <button id="back-to-calendar-btn">Back to Calendar</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        async function main() {
+            // --- 1. Firebase Initialization ---
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-tracker-app';
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            // --- 2. Authentication ---
+            await new Promise(resolve => {
+                onAuthStateChanged(auth, user => {
+                    if (user) resolve();
+                    else if (initialAuthToken) signInWithCustomToken(auth, initialAuthToken).then(resolve);
+                    else signInAnonymously(auth).then(resolve);
+                });
+            });
+            const userId = auth.currentUser.uid;
+            
+            // --- 3. State Management & Date Setup ---
+            let historyData = {};
+            let calendarDate = new Date();
+            
+            const getLocalDateString = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            
+            const todayString = getLocalDateString(new Date());
+            let selectedDate = todayString;
+
+            // --- 4. Get HTML Elements ---
+            const calendarPage = document.getElementById('calendar-page');
+            const questionsPage = document.getElementById('questions-page');
+            const calendarBody = document.getElementById('calendar-body');
+            const monthYearEl = document.getElementById('month-year');
+            const editingDateDisplay = document.getElementById('editing-date-display');
+            const backToCalendarBtn = document.getElementById('back-to-calendar-btn');
+
+            // --- 5. Page Navigation ---
+            const showPage = (pageId) => {
+                calendarPage.style.display = 'none';
+                questionsPage.style.display = 'none';
+                document.getElementById(pageId).style.display = 'block';
+            };
+
+            // --- 6. Fetch All Data ---
+            const loadAllData = async () => {
+                const historyCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/daily-tracker`);
+                const querySnapshot = await getDocs(historyCollectionRef);
+                querySnapshot.forEach(doc => {
+                    historyData[doc.id] = doc.data();
+                });
+            };
+
+            // --- 7. UI Update & Save Logic ---
+            const updateUIForSelectedDate = () => {
+                const dateObj = new Date(selectedDate.replace(/-/g, '/'));
+                editingDateDisplay.textContent = `${dateObj.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}`;
+
+                const dataForDay = historyData[selectedDate] || {};
+                document.querySelectorAll('.question-group').forEach(group => {
+                    const question = group.id.replace('-group', '');
+                    const savedAnswer = dataForDay[question];
+                    group.querySelectorAll('button').forEach(button => {
+                        button.classList.toggle('selected', button.dataset.answer === savedAnswer);
+                    });
+                });
+            };
+
+            const saveDataForSelectedDate = async () => {
+                const dataToSave = historyData[selectedDate];
+                if (!dataToSave) return; 
+
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/daily-tracker`, selectedDate);
+                await setDoc(docRef, dataToSave);
+                renderCalendar(); 
+            };
+
+            // --- 8. Calendar Rendering ---
+            const renderCalendar = () => {
+                const year = calendarDate.getFullYear();
+                const month = calendarDate.getMonth();
+                
+                monthYearEl.textContent = `${calendarDate.toLocaleString('default', { month: 'long' })} ${year}`;
+                calendarBody.innerHTML = '';
+
+                const firstDayOfMonth = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                for (let i = 0; i < firstDayOfMonth; i++) calendarBody.insertAdjacentHTML('beforeend', `<div class="empty-day"></div>`);
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayCell = document.createElement('div');
+                    dayCell.classList.add('calendar-day');
+                    dayCell.dataset.date = dateStr;
+
+                    if (dateStr > todayString) dayCell.classList.add('future-day');
+                    if (dateStr === todayString) dayCell.classList.add('today');
+                    if (dateStr === selectedDate) dayCell.classList.add('selected-day');
+
+                    dayCell.innerHTML = `<span class="day-number">${day}</span>`;
+                    
+                    const dataForDay = historyData[dateStr];
+                    if (dataForDay) {
+                        const indicatorsDiv = document.createElement('div');
+                        indicatorsDiv.classList.add('indicators');
+                        if (dataForDay.exercise) indicatorsDiv.insertAdjacentHTML('beforeend', `<div class="indicator ${dataForDay.exercise === 'yes' ? 'green' : 'red'}"></div>`);
+                        if (dataForDay.ateTooMuch) indicatorsDiv.insertAdjacentHTML('beforeend', `<div class="indicator ${dataForDay.ateTooMuch === 'yes' ? 'red' : 'green'}"></div>`);
+                        dayCell.appendChild(indicatorsDiv);
+                    }
+                    calendarBody.appendChild(dayCell);
+                }
+            };
+            
+            const weekdayContainer = document.getElementById('weekday-headers');
+            weekdayContainer.innerHTML = ''; // Clear existing headers before re-adding
+            ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => weekdayContainer.insertAdjacentHTML('beforeend', `<div class="weekday-header">${day}</div>`));
+
+            // --- 9. Event Listeners ---
+            document.querySelectorAll('button[data-question]').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const question = event.target.dataset.question;
+                    const answer = event.target.dataset.answer;
+
+                    if (!historyData[selectedDate]) {
+                        historyData[selectedDate] = {};
+                    }
+                    // Toggle off if clicking the same answer again
+                    if(historyData[selectedDate][question] === answer) {
+                        delete historyData[selectedDate][question];
+                    } else {
+                        historyData[selectedDate][question] = answer;
+                    }
+                    
+                    updateUIForSelectedDate();
+                    await saveDataForSelectedDate();
+                });
+            });
+
+            calendarBody.addEventListener('click', (event) => {
+                const dayCell = event.target.closest('.calendar-day');
+                if (dayCell && dayCell.dataset.date && !dayCell.classList.contains('future-day')) {
+                    selectedDate = dayCell.dataset.date;
+                    updateUIForSelectedDate();
+                    showPage('questions-page');
+                }
+            });
+
+            backToCalendarBtn.addEventListener('click', () => {
+                renderCalendar(); 
+                showPage('calendar-page');
+            });
+
+            document.getElementById('prev-month-btn').addEventListener('click', () => {
+                calendarDate.setMonth(calendarDate.getMonth() - 1);
+                renderCalendar();
+            });
+
+            document.getElementById('next-month-btn').addEventListener('click', () => {
+                calendarDate.setMonth(calendarDate.getMonth() + 1);
+                renderCalendar();
+            });
+
+            // --- 10. Initial Load ---
+            await loadAllData();
+            renderCalendar();
+            showPage('calendar-page');
+        }
+
+        document.addEventListener('DOMContentLoaded', main);
+    </script>
+</body>
+</html>
